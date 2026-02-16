@@ -222,7 +222,7 @@ class SurvivalAnalysisModel:
             "p_values": coxph.summary["p"].to_dict(),
             "concordance_index": float(coxph.concordance_index_),
             "log_likelihood": float(coxph.log_likelihood_),
-            "aic": float(coxph.AIC_),
+            "aic": float(coxph.AIC_partial_),
             "n_obs": int(len(model_data)),
             "n_events": int(model_data[self.event_col].sum()),
         }

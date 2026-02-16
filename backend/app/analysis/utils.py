@@ -135,6 +135,10 @@ def identify_discount_events(
     """
     df = df.sort_values(["game_id", "date"])
     
+    # Check required columns exist
+    if "is_discount_active" not in df.columns or "discount_pct" not in df.columns:
+        return pd.DataFrame(columns=["game_id", "start_date", "end_date", "discount_pct"])
+    
     events = []
     current_event = None
     
