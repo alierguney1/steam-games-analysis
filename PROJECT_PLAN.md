@@ -611,19 +611,19 @@ class PriceElasticityAnalyzer:
 
 ## 10. Development Roadmap
 
-### Phase 1: Foundation (Hafta 1-2)
-- [ ] Docker Compose environment setup
-- [ ] PostgreSQL Star Schema DDL oluşturma
-- [ ] FastAPI base structure + config management
-- [ ] React + Vite + Tailwind boilerplate
+### Phase 1: Foundation (Hafta 1-2) ✅ TAMAMLANDI
+- [x] Docker Compose environment setup
+- [x] PostgreSQL Star Schema DDL oluşturma
+- [x] FastAPI base structure + config management
+- [x] React + Vite + Tailwind boilerplate
 
-### Phase 2: Data Ingestion (Hafta 3-4)
-- [ ] BaseScraper abstract class implementation
-- [ ] SteamSpyClient + rate-limit logic
-- [ ] SteamChartsScraper + BeautifulSoup parser
-- [ ] SteamStoreClient + batch API handling
-- [ ] Hybrid merge strategy implementation
-- [ ] PostgreSQL loader (bulk upsert)
+### Phase 2: Data Ingestion (Hafta 3-4) ✅ TAMAMLANDI
+- [x] BaseScraper abstract class implementation
+- [x] SteamSpyClient + rate-limit logic
+- [x] SteamChartsScraper + BeautifulSoup parser
+- [x] SteamStoreClient + batch API handling
+- [x] Hybrid merge strategy implementation
+- [x] PostgreSQL loader (bulk upsert)
 
 ### Phase 3: Analytics (Hafta 5-6)
 - [ ] Difference-in-Differences model class

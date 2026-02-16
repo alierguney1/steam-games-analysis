@@ -52,6 +52,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+async def get_session() -> AsyncSession:
+    """
+    Get a new async database session
+    For use outside of FastAPI dependency injection
+    """
+    return AsyncSessionLocal()
+
+
 async def init_db() -> None:
     """
     Initialize database connection
