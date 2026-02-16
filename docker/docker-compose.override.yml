@@ -2,8 +2,6 @@
 # This file is automatically merged with docker-compose.yml
 # Use: docker-compose up -d
 
-version: '3.8'
-
 services:
   backend:
     volumes:

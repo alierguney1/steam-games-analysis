@@ -201,16 +201,20 @@ def test_did_with_missing_data():
     # Create data with some missing values
     treatment_df = pd.DataFrame({
         "game_id": [1] * 5,
-        "date": pd.date_range("2024-01-01", periods=5, freq="M"),
+        "date": pd.date_range("2024-01-01", periods=5, freq="ME"),
         "avg_players": [1000, np.nan, 1200, 1150, 1300],
         "current_price": [19.99] * 5,
+        "is_discount_active": [False, False, True, True, True],
+        "discount_pct": [0.0, 0.0, 30.0, 30.0, 30.0],
     })
     
     control_df = pd.DataFrame({
         "game_id": [2] * 5,
-        "date": pd.date_range("2024-01-01", periods=5, freq="M"),
+        "date": pd.date_range("2024-01-01", periods=5, freq="ME"),
         "avg_players": [1000, 980, 1020, np.nan, 1010],
         "current_price": [19.99] * 5,
+        "is_discount_active": [False, False, False, False, False],
+        "discount_pct": [0.0, 0.0, 0.0, 0.0, 0.0],
     })
     
     model = DifferenceInDifferencesModel(

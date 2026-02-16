@@ -5,16 +5,16 @@ Aggregates all API endpoints
 
 from fastapi import APIRouter
 
-# Import endpoint routers (will be created later)
-# from app.api import games, analytics, ingestion, dashboard
+# Import endpoint routers
+from app.api import games, analytics, ingestion, dashboard
 
 api_router = APIRouter()
 
-# Include sub-routers (placeholder for now)
-# api_router.include_router(games.router, prefix="/games", tags=["games"])
-# api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
-# api_router.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
-# api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
+# Include sub-routers
+api_router.include_router(games.router, prefix="/games", tags=["games"])
+api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+api_router.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 
 
 @api_router.get("/")
@@ -37,3 +37,4 @@ async def root():
 async def health():
     """Health check endpoint"""
     return {"status": "healthy"}
+

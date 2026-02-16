@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # PostgreSQL Database
@@ -15,7 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-steam_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-steam_user} -d ${POSTGRES_DB:-steam_analytics}"]
       interval: 10s
       timeout: 5s
       retries: 5

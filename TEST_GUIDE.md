@@ -56,7 +56,39 @@ Loglar akmaya başladığında her şey hazır demektir. Çıkmak için `Ctrl+C`
 
 Tarayıcınızda **http://localhost:8000/api/docs** adresini açın.
 
-Swagger arayüzünde mevcut endpoint'leri göreceksiniz. Her birini "Try it out" butonuyla doğrudan test edebilirsiniz.
+Swagger arayüzünde artık **yeni API endpoint'lerini** göreceksiniz:
+
+### Yeni API Endpoint'leri (Phase 4)
+
+**Games API** (`/api/games`):
+- `GET /api/games` - Oyunları listele (filtreleme, sıralama, sayfalama)
+- `GET /api/games/{game_id}` - Oyun detayları
+- `GET /api/games/search` - Oyun ara
+- `POST /api/games` - Yeni oyun oluştur
+- `PUT /api/games/{game_id}` - Oyun güncelle
+- `DELETE /api/games/{game_id}` - Oyun sil
+
+**Analytics API** (`/api/analytics`):
+- `POST /api/analytics/did` - DiD analizi çalıştır
+- `POST /api/analytics/survival` - Survival analizi çalıştır
+- `POST /api/analytics/elasticity` - Fiyat esnekliği analizi çalıştır
+- `GET /api/analytics/results` - Analiz sonuçlarını listele
+- `GET /api/analytics/results/{result_id}` - Analiz sonucu detayları
+
+**Ingestion API** (`/api/ingestion`):
+- `POST /api/ingestion/trigger` - Manuel ETL tetikle
+- `GET /api/ingestion/status/{job_id}` - İş durumu sorgula
+- `GET /api/ingestion/status` - Genel ETL durumu
+- `GET /api/ingestion/data-quality` - Veri kalite metrikleri
+
+**Dashboard API** (`/api/dashboard`):
+- `GET /api/dashboard/` - Kapsamlı dashboard verisi
+- `GET /api/dashboard/summary` - Özet metrikler
+- `GET /api/dashboard/top-games` - En iyi oyunlar
+- `GET /api/dashboard/genre-distribution` - Tür dağılımı
+- `GET /api/dashboard/time-series/players` - Zaman serisi verileri
+
+Her endpoint'i Swagger'da "Try it out" butonuyla test edebilirsiniz.
 
 **Sağlık kontrolü (terminal'den):**
 ```bash
@@ -66,6 +98,11 @@ curl http://localhost:8000/api/health
 Beklenen yanıt:
 ```json
 {"status": "healthy"}
+```
+
+**Dashboard özeti testi:**
+```bash
+curl http://localhost:8000/api/dashboard/summary
 ```
 
 ---
@@ -389,3 +426,14 @@ Her şey doğru çalıştığında şunları görmelisiniz:
 3. **Price Elasticity** — Talep esnekliği ve optimal fiyat önerileri
 
 Bu modüller artık tam fonksiyonel ve test edilmiştir!
+
+### Yeni Eklenen API Katmanı (Phase 4)
+
+**Phase 4** ile birlikte REST API katmanı tamamlanmıştır:
+
+1. **Games API** — CRUD operasyonları, arama, filtreleme, sayfalama
+2. **Analytics API** — DiD, Survival ve Elasticity analizlerini tetikleme
+3. **Ingestion API** — Manuel ETL tetikleme, durum izleme, veri kalitesi
+4. **Dashboard API** — Özet metrikler, top oyunlar, tür dağılımı, zaman serileri
+
+Tüm endpoint'ler Swagger UI'da (`/api/docs`) görülebilir ve test edilebilir!
