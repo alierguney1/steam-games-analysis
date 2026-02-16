@@ -179,7 +179,7 @@ class SteamChartsScraper(BaseScraper):
                 "month": dt.month,
                 "year": dt.year
             }
-        except:
+        except Exception:
             return None
 
     def _parse_number(self, num_str: str, allow_negative: bool = False) -> Optional[int]:
@@ -207,7 +207,7 @@ class SteamChartsScraper(BaseScraper):
                 return None
             
             return int(float(clean_str))
-        except:
+        except Exception:
             return None
 
     def _parse_percentage(self, pct_str: str) -> Optional[float]:
@@ -227,7 +227,7 @@ class SteamChartsScraper(BaseScraper):
             # Remove % sign and +/- prefix
             clean_str = pct_str.replace("%", "").replace("+", "").strip()
             return float(clean_str)
-        except:
+        except Exception:
             return None
 
     def transform(self, parsed_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -251,8 +251,6 @@ class SteamChartsScraper(BaseScraper):
                 "concurrent_players_avg": record["avg_players"],
                 "concurrent_players_peak": record["peak_players"],
                 "gain_pct": record["gain_pct"],
-                "avg_players_month": record["avg_players"],
-                "peak_players_month": record["peak_players"],
             }
             fact_records.append(fact_record)
         

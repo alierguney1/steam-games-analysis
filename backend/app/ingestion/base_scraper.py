@@ -104,7 +104,7 @@ class BaseScraper(ABC):
                         # Try to parse as JSON first
                         try:
                             data = await response.json()
-                        except:
+                        except Exception:
                             # If JSON parsing fails, return text
                             data = {"text": await response.text()}
                         

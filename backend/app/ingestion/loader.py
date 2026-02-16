@@ -280,7 +280,7 @@ class DataLoader:
         
         try:
             full_date = date(year, month, 1)
-        except:
+        except Exception:
             return None
         
         # Try to get existing date

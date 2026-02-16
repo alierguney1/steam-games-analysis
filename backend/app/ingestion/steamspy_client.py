@@ -173,7 +173,7 @@ class SteamSpyClient(BaseScraper):
                 else:
                     return int(parts[1].strip())
             return None
-        except:
+        except Exception:
             return None
 
     def transform(self, parsed_data: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:

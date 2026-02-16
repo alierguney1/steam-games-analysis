@@ -195,7 +195,7 @@ class SteamStoreClient(BaseScraper):
                 try:
                     from datetime import datetime
                     release_date = datetime.strptime(record["release_date"], "%b %d, %Y").date()
-                except:
+                except Exception:
                     release_date = None
             else:
                 release_date = None
