@@ -638,13 +638,13 @@ class PriceElasticityAnalyzer:
 - [x] Ingestion trigger endpoints
 - [x] Dashboard summary endpoint
 
-### Phase 5: Frontend (Hafta 8-9)
-- [ ] Layout components (Sidebar, Header)
-- [ ] Dashboard page + KPI cards
-- [ ] Game Detail page + trend charts
-- [ ] Causal Analysis page + DiD visualization (D3.js)
-- [ ] Survival Analysis page + Kaplan-Meier curves (D3.js)
-- [ ] Data Status page + ETL monitoring
+### Phase 5: Frontend (Hafta 8-9) ✅ TAMAMLANDI
+- [x] Layout components (Sidebar, Header)
+- [x] Dashboard page + KPI cards
+- [x] Game Detail page + trend charts
+- [x] Causal Analysis page + DiD visualization (Recharts)
+- [x] Survival Analysis page + Kaplan-Meier curves (Recharts)
+- [x] Data Status page + ETL monitoring
 
 ### Phase 6: Automation & Testing (Hafta 10)
 - [ ] APScheduler job definitions

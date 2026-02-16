@@ -362,7 +362,73 @@ if "overall" in results["elasticity_results"]:
 
 Tarayıcınızda **http://localhost:5173** adresini açın.
 
-React arayüzünün yüklendiğini ve çalıştığını doğrulayın.
+### Ana Sayfalar (Phase 5)
+
+Artık tam fonksiyonel bir React arayüzü var! Sol taraftaki navigasyon menüsünü kullanarak şu sayfalara erişebilirsiniz:
+
+#### 1. Dashboard (Ana Sayfa)
+- **Adres**: http://localhost:5173/
+- **Özellikler**:
+  - KPI kartları (toplam oyun, kayıt, ortalama oyuncu, aktif indirim)
+  - Genel istatistikler
+  - Son güncelleme bilgisi
+  - Veri yoksa kullanıcı yönlendirme mesajları
+
+#### 2. Oyunlar Sayfası
+- **Adres**: http://localhost:5173/games
+- **Özellikler**:
+  - Oyun listesi (sayfalama ile)
+  - Arama çubuğu
+  - Her oyun için detay butonu
+  - Geliştirici, yayıncı, çıkış tarihi bilgileri
+
+#### 3. Oyun Detay Sayfası
+- **Adres**: http://localhost:5173/games/{game_id}
+- **Özellikler**:
+  - Oyun bilgileri (geliştirici, yayıncı, çıkış tarihi)
+  - İnceleme istatistikleri (olumlu/olumsuz)
+  - SteamSpy sahip sayısı tahmini
+  - Oyuncu trendi grafiği (Recharts)
+  - Fiyat geçmişi grafiği
+
+#### 4. Nedensel Analiz (DiD)
+- **Adres**: http://localhost:5173/causal-analysis
+- **Özellikler**:
+  - Treatment ve control oyun seçimi
+  - DiD analizi çalıştırma
+  - ATT (Average Treatment Effect) sonuçları
+  - P-değeri ve güven aralığı
+  - Paralel trend testi
+  - Treatment vs Control karşılaştırma grafiği
+  - Placebo test sonuçları
+
+#### 5. Survival Analizi
+- **Adres**: http://localhost:5173/survival-analysis
+- **Özellikler**:
+  - Churn eşiği belirleme
+  - Gruplama kolonu seçimi (tür, ücretsiz/ücretli, vb.)
+  - Retention ve churn metrikleri
+  - Kaplan-Meier survival eğrileri (Recharts)
+  - Cox Proportional Hazards model sonuçları
+  - Grup bazlı karşılaştırmalar
+
+#### 6. Veri Durumu
+- **Adres**: http://localhost:5173/data-status
+- **Özellikler**:
+  - Genel sistem durumu (sağlıklı/uyarı/hata)
+  - Veri kalite metrikleri
+  - Veri tazeliği bilgisi
+  - Son ETL işleri tablosu
+  - Pipeline istatistikleri
+  - Veritabanı tablo bilgileri
+
+### Test Adımları
+
+1. **Dashboard'u kontrol edin**: Ana sayfada KPI kartlarının yüklendiğini doğrulayın
+2. **Navigasyon'u test edin**: Sol menüden tüm sayfalara gidin
+3. **Oyun listesini inceleyin**: Oyunlar sayfasında arama ve sayfalama çalıştığını doğrulayın
+4. **Grafikleri kontrol edin**: Oyun detay sayfasında Recharts grafiklerinin render olduğunu görün
+5. **Analiz sayfalarını test edin**: DiD ve Survival analiz formlarını doldurup çalıştırın
 
 ---
 
@@ -437,3 +503,17 @@ Bu modüller artık tam fonksiyonel ve test edilmiştir!
 4. **Dashboard API** — Özet metrikler, top oyunlar, tür dağılımı, zaman serileri
 
 Tüm endpoint'ler Swagger UI'da (`/api/docs`) görülebilir ve test edilebilir!
+
+### Yeni Eklenen Frontend Katmanı (Phase 5)
+
+**Phase 5** ile birlikte tam fonksiyonel React frontend tamamlanmıştır:
+
+1. **Layout Components** — Sidebar navigasyon ve Header ile tutarlı sayfa düzeni
+2. **Dashboard Sayfası** — KPI kartları, özet metrikler ve genel bakış
+3. **Oyunlar Sayfası** — Arama, filtreleme, sayfalama ile oyun listesi
+4. **Oyun Detay Sayfası** — Oyuncu ve fiyat trend grafikleri (Recharts)
+5. **Nedensel Analiz Sayfası** — DiD modeli sonuçları ve görselleştirme
+6. **Survival Analiz Sayfası** — Kaplan-Meier eğrileri ve Cox PH sonuçları
+7. **Veri Durumu Sayfası** — ETL pipeline monitoring ve veri kalitesi metrikleri
+
+Artık uçtan uca çalışan bir analitik platform var!
