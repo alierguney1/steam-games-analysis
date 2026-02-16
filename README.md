@@ -128,7 +128,354 @@ npm run dev
 - Monthly analytical model runs
 - Rate-limited, async scraping
 
-## 📁 Project Structure
+## � Veri Pipeline'ı: Teknik Dokümantasyon
+
+> Bu bölüm, projenin veri kaynaklarını, veri formatlarını, birleştirme stratejisini ve veritabanı yapısını
+> giriş seviyesindeki bir data scientist'in anlayabileceği düzeyde açıklar.
+
+### 1. Veri Kaynakları
+
+Bu proje, Steam oyun ekosisteminden veri toplamak için **üç farklı kaynak** kullanır. Her kaynak farklı türde bilgi sağlar ve farklı teknik yöntemlerle erişilir.
+
+#### 1.1. SteamSpy API (`steamspy_client.py`)
+
+| Özellik | Detay |
+|---------|-------|
+| **URL** | `https://steamspy.com/api.php` |
+| **Erişim Yöntemi** | REST API (JSON) |
+| **Rate Limit** | `/all` endpoint'i: 60 sn bekleme; `/appdetails`: 1 sn/istek |
+| **Rol** | Oyun metadata'sı ve keşif için **birincil kaynak** |
+
+**Ne veri gelir?** SteamSpy, Steam'deki oyunların topluluk istatistiklerini toplar. API'den gelen ham JSON şuna benzer:
+
+```json
+{
+  "appid": 730,
+  "name": "Counter-Strike 2",
+  "developer": "Valve",
+  "publisher": "Valve",
+  "positive": 7200000,
+  "negative": 1100000,
+  "owners": "50,000,000 .. 100,000,000",
+  "average_forever": 32000,
+  "average_2weeks": 1200,
+  "ccu": 850000,
+  "price": 0,
+  "initialprice": 0,
+  "discount": 0,
+  "tags": {"FPS": 9500, "Shooter": 8700, "Competitive": 7200},
+  "genre": "Action, Free to Play",
+  "languages": "English, Turkish, ..."
+}
+```
+
+**Parse işlemi sırasında neler yapılır:**
+- `owners` alanı ("50,000,000 .. 100,000,000") parse edilerek `owners_min` ve `owners_max` olarak ayrılır
+- `tags` dict'inden benzersiz tag listesi çıkarılır → `dim_tag` tablosuna yazılır
+- `genre` virgülle ayrılmış string'den genre listesi çıkarılır → `dim_genre` tablosuna yazılır
+
+**Transform çıktısı:** SteamSpy client'ın `transform()` metodu dört ayrı liste döndürür:
+
+```python
+{
+    "games": [...],       # dim_game tablosuna gidecek oyun bilgileri
+    "tags": [...],        # dim_tag tablosuna gidecek tag'ler
+    "genres": [...],      # dim_genre tablosuna gidecek genre'ler
+    "raw_games": [...]    # Bridge tablo oluşturmak için ham veri (tag-oyun ilişkisi)
+}
+```
+
+#### 1.2. SteamCharts Scraper (`steamcharts_scraper.py`)
+
+| Özellik | Detay |
+|---------|-------|
+| **URL** | `https://steamcharts.com/app/{appid}` |
+| **Erişim Yöntemi** | Web Scraping (HTML → BeautifulSoup ile parse) |
+| **Rate Limit** | 2 sn/istek (robots.txt'e saygılı) |
+| **Rol** | Oyuncu sayıları için **birincil kaynak** |
+
+**Ne veri gelir?** SteamCharts bir API sunmaz, bunun yerine HTML sayfaları scrape edilir. Sayfadaki tablo şu sütunları içerir:
+
+```
+| Month         | Avg. Players | Gain    | % Gain  | Peak Players |
+|---------------|------------- |---------|---------|-------------- |
+| January 2024  | 32,456       | +1,234  | +3.95%  | 65,789       |
+| December 2023 | 31,222       | -500    | -1.58%  | 60,123       |
+```
+
+**Parse işlemi sırasında neler yapılır:**
+
+1. HTML, `BeautifulSoup` ile DOM ağacına dönüştürülür
+2. `<table class="common-table">` bulunur
+3. Her satırdan ay/yıl, ortalama oyuncu, peak oyuncu, değişim yüzdesi parse edilir
+4. Sayısal değerlerdeki virgüller temizlenir (ör. "32,456" → 32456)
+5. Yüzde değerleri float'a çevrilir (ör. "+3.95%" → 3.95)
+6. Ay isimleri datetime objelerine dönüştürülür (ör. "January 2024" → month=1, year=2024)
+
+**Transform çıktısı:** Her kayıt bir "fact record" olur:
+
+```python
+{
+    "appid": 730,
+    "month": 1,
+    "year": 2024,
+    "concurrent_players_avg": 32456,
+    "concurrent_players_peak": 65789,
+    "gain_pct": 3.95
+}
+```
+
+#### 1.3. Steam Store API (`steam_store_client.py`)
+
+| Özellik | Detay |
+|---------|-------|
+| **URL** | `https://store.steampowered.com/api/appdetails?appids={id}` |
+| **Erişim Yöntemi** | REST API (JSON) |
+| **Rate Limit** | 1.5 sn/istek, batch desteği (200 appid/batch) |
+| **Rol** | Fiyat ve indirim bilgisi için **birincil kaynak** |
+
+**Ne veri gelir?** Steam'in resmi API'sinden gelen JSON iç içe geçmiş (nested) bir yapıdadır:
+
+```json
+{
+  "730": {
+    "success": true,
+    "data": {
+      "name": "Counter-Strike 2",
+      "is_free": true,
+      "type": "game",
+      "release_date": {"date": "Aug 21, 2012"},
+      "developers": ["Valve"],
+      "publishers": ["Valve"],
+      "price_overview": {
+        "currency": "USD",
+        "initial": 1499,
+        "final": 749,
+        "discount_percent": 50
+      }
+    }
+  }
+}
+```
+
+**Dikkat edilmesi gereken noktalar:**
+- Fiyatlar **cent** cinsinden gelir → 100'e bölünerek dolara çevrilir: `1499 → 14.99`
+- `release_date` formatı "Aug 21, 2012" → `datetime.strptime` ile parse edilir
+- Ücretsiz oyunlarda `price_overview` alanı boş gelir
+
+**Transform çıktısı:** İki ayrı liste üretilir:
+
+```python
+{
+    "pricing_facts": [     # fact tablosuna gidecek fiyat metrikleri
+        {
+            "appid": 730,
+            "current_price": 7.49,
+            "original_price": 14.99,
+            "discount_pct": 50,
+            "is_discount_active": True
+        }
+    ],
+    "game_updates": [      # dim_game tablosundaki bilgileri güncellemek için
+        {
+            "appid": 730,
+            "is_free": False,
+            "release_date": "2012-08-21",
+            "developer": "Valve",
+            "publisher": "Valve"
+        }
+    ]
+}
+```
+
+### 2. Her Kaynaktaki Ortak Altyapı: BaseScraper
+
+Üç client da `BaseScraper` soyut sınıfından türer. Bu sınıf şunları sağlar:
+
+- **Rate Limiting**: `asyncio.Semaphore` ile eş zamanlı istek sayısı kontrolü
+- **Retry Logic**: Başarısız istekler üstel geri çekilme (exponential backoff) ile yeniden denenir
+- **Async HTTP**: `aiohttp.ClientSession` ile non-blocking I/O
+- **User-Agent**: Gerçek tarayıcı gibi gözükmek için özel header
+
+```
+Her client şu lifecycle'ı izler:
+  fetch()  →  ham veriyi indir (JSON veya HTML)
+  parse()  →  ham veriyi yapılandırılmış dict listesine dönüştür
+  transform()  →  veritabanına yazılmaya hazır formata getir
+```
+
+### 3. Veri Birleştirme (Merge) Stratejisi
+
+`DataMerger` sınıfı üç kaynağı **hybrid merge** stratejisiyle birleştirir. Her kaynak belirli alanlar için **otorite** kabul edilir:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                    MERGE STRATEJİSİ                        │
+├────────────────┬───────────────────────────────────────────┤
+│   Kaynak       │  Otoritesi (Birincil olduğu alanlar)     │
+├────────────────┼───────────────────────────────────────────┤
+│   SteamSpy     │  Oyun keşfi, tag'ler, genre'ler,         │
+│                │  sahip sayısı tahmini, review'ler         │
+├────────────────┼───────────────────────────────────────────┤
+│   SteamCharts  │  Aylık ortalama/peak oyuncu sayıları,    │
+│                │  oyuncu trendleri (gain_pct)              │
+├────────────────┼───────────────────────────────────────────┤
+│   Steam Store  │  Güncel fiyat, indirim oranı, çıkış      │
+│                │  tarihi, geliştirici/yayıncı bilgisi      │
+└────────────────┴───────────────────────────────────────────┘
+```
+
+#### Birleştirme Adımları
+
+**Adım 1 — Oyun Metadata Birleştirme (`_merge_game_metadata`):**
+
+SteamSpy ve Steam Store'dan gelen oyun bilgileri `pandas.DataFrame.merge()` ile birleştirilir:
+- Yöntem: **LEFT JOIN** (SteamSpy'daki tüm oyunlar korunur)
+- Birleştirme anahtarı: `appid`
+- `is_free`, `release_date`, `developer`, `publisher` alanlarında **Steam Store** verisi önceliklidir
+- Steam Store'da bulunmayan oyunlar için SteamSpy değerleri korunur (`.combine_first()`)
+
+**Adım 2 — Fact Kayıtları Birleştirme (`_merge_fact_records`):**
+
+SteamCharts'tan gelen aylık oyuncu metrikleri + Steam Store'dan gelen fiyat bilgileri birleştirilir:
+- Yöntem: **LEFT JOIN** on `appid`
+- SteamCharts'tan: `concurrent_players_avg`, `concurrent_players_peak`, `gain_pct`
+- Steam Store'dan: `current_price`, `original_price`, `discount_pct`, `is_discount_active`
+
+**Adım 3 — Bridge Kayıtları (`_create_bridge_records`):**
+
+SteamSpy'ın ham verisindeki `tags` dict'inden oyun-tag ilişkileri oluşturulur:
+- Her oyun için tüm tag isimleri `(appid, tag_name)` çiftlerine dönüştürülür
+
+**Son çıktı (merge sonrası):**
+
+```python
+{
+    "dim_game":           [...],   # Oyun bilgileri (SteamSpy + Store)
+    "dim_tag":            [...],   # Benzersiz tag listesi
+    "dim_genre":          [...],   # Benzersiz genre listesi
+    "fact_player_price":  [...],   # Aylık oyuncu + fiyat metrikleri
+    "bridge_game_tag":    [...],   # Oyun-tag ilişki kayıtları
+}
+```
+
+### 4. Veritabanı Yapısı: Star Schema
+
+Veriler PostgreSQL'de **star schema** (yıldız şeması) ile tutulur. Bu yapı analitik sorgular için optimize edilmiştir.
+
+```
+                        ┌──────────────┐
+                        │   dim_date   │
+                        │──────────────│
+                        │ date_id (PK) │
+                        │ full_date    │
+                        │ year         │
+                        │ quarter      │
+                        │ month        │
+                        │ day_of_week  │
+                        │ is_weekend   │
+                        │ is_steam_    │
+                        │  sale_period │
+                        └──────┬───────┘
+                               │
+┌──────────────┐    ┌──────────┴──────────┐    ┌──────────────┐
+│   dim_game   │    │  fact_player_price   │    │  dim_genre   │
+│──────────────│    │─────────────────────│    │──────────────│
+│ game_id (PK) │◄──│ game_id (FK)        │    │ genre_id(PK) │
+│ appid (UQ)   │    │ date_id (FK)        │──►│ genre_name   │
+│ name         │    │ genre_id (FK)       │    └──────────────┘
+│ developer    │    │ concurrent_players_ │
+│ publisher    │    │  avg               │
+│ release_date │    │ concurrent_players_ │
+│ is_free      │    │  peak              │
+│ owners_min   │    │ gain_pct           │
+│ owners_max   │    │ current_price      │
+│ positive_rev │    │ original_price     │
+│ negative_rev │    │ discount_pct       │
+└──────┬───────┘    │ is_discount_active │
+       │            └────────────────────┘
+       │
+       │
+┌──────┴────────────┐    ┌──────────────┐
+│ bridge_game_tag   │    │   dim_tag     │
+│───────────────────│    │──────────────│
+│ game_id (FK, PK)  │──►│ tag_id (PK)  │
+│ tag_id  (FK, PK)  │    │ tag_name     │
+└───────────────────┘    └──────────────┘
+```
+
+#### Neden Star Schema?
+
+- **Basit JOIN'ler**: Fact tablosu merkezde, dimension tabloları etrafında → karmaşık sorgular bile 1-2 JOIN ile yazılabilir
+- **Analitik Uygunluk**: "X ayında Y oyununun fiyatı neydi, oyuncu sayısı kaçtı?" gibi sorular doğal olarak modellenir
+- **Esneklik**: Yeni bir dimension eklemek (ör. `dim_region`) mevcut yapıyı bozmadan mümkündür
+
+#### Tablolar ve Rolleri
+
+| Tablo | Tip | Açıklama |
+|-------|-----|----------|
+| `dim_game` | Dimension | Oyun bilgileri (isim, geliştirici, sahip sayısı, review'ler) |
+| `dim_date` | Dimension | Takvim bilgileri (yıl, çeyrek, ay, Steam indirim dönemi) |
+| `dim_genre` | Dimension | Oyun türleri (Action, RPG, Strategy vb.) |
+| `dim_tag` | Dimension | Kullanıcı etiketleri (FPS, Multiplayer, Open World vb.) |
+| `bridge_game_tag` | Bridge | Oyun-tag çoktan-çoğa ilişkisi |
+| `fact_player_price` | Fact | Aylık oyuncu metrikleri + fiyat bilgisi (ölçüm verileri) |
+| `analysis_results` | Sonuç | Analitik model çıktıları (JSONB formatında) |
+
+### 5. Yükleme (Load) Süreci
+
+`DataLoader` sınıfı, birleştirilmiş verileri PostgreSQL'e **upsert** (insert or update) mantığıyla yazar:
+
+```
+Yükleme sırası (foreign key bağımlılıkları nedeniyle):
+  1. dim_genre   → Önce genre'ler (bağımsız)
+  2. dim_tag     → Sonra tag'ler (bağımsız)
+  3. dim_game    → Oyunlar (bağımsız ama genre/tag'den sonra güvenli)
+  4. dim_date    → Tarihler (otomatik oluşturulur)
+  5. fact_player_price → Fact kayıtları (game_id ve date_id gerektirir)
+  6. bridge_game_tag   → Bridge kayıtları (game_id ve tag_id gerektirir)
+```
+
+- PostgreSQL'in `INSERT ... ON CONFLICT DO UPDATE` özelliği kullanılır
+- Aynı `appid`'li oyun tekrar geldiğinde güncellenir, duplicate oluşmaz
+- Bridge tabloda `ON CONFLICT DO NOTHING` ile gereksiz tekrar engellenir
+
+### 6. Pipeline Akış Özeti
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  SteamSpy   │     │ SteamCharts │     │ Steam Store  │
+│   (API)     │     │  (Scraping) │     │   (API)      │
+└──────┬──────┘     └──────┬──────┘     └──────┬───────┘
+       │ JSON              │ HTML              │ JSON
+       ▼                   ▼                   ▼
+┌──────────────┐   ┌──────────────┐    ┌──────────────┐
+│   fetch()    │   │   fetch()    │    │   fetch()    │
+│   parse()    │   │   parse()    │    │   parse()    │
+│  transform() │   │  transform() │    │  transform() │
+└──────┬───────┘   └──────┬───────┘    └──────┬───────┘
+       │                  │                    │
+       └──────────────────┼────────────────────┘
+                          ▼
+                 ┌─────────────────┐
+                 │   DataMerger    │
+                 │  (Hybrid Join)  │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │   DataLoader    │
+                 │ (Upsert → PG)  │
+                 └────────┬────────┘
+                          │
+                          ▼
+                 ┌─────────────────┐
+                 │   PostgreSQL    │
+                 │  (Star Schema)  │
+                 └─────────────────┘
+```
+
+## �📁 Project Structure
 
 ```
 steam-games-analysis/
