@@ -187,7 +187,141 @@ LIMIT 5;
 
 ---
 
-## Adım 6: Frontend'i Kontrol Edin
+## Adım 6: Analitik Modülleri Test Edin (Yeni!)
+
+Backend container'ına bağlanıp analitik modülleri test edin:
+
+```bash
+docker exec -it steam-backend bash
+python3
+```
+
+### DiD (Difference-in-Differences) Analizi
+
+```python
+import asyncio
+import pandas as pd
+from datetime import datetime, timedelta
+from app.analysis.did_model import run_did_analysis
+
+# Örnek veri oluştur
+def create_sample_data():
+    dates = [datetime(2024, 1, 1) + timedelta(days=30*i) for i in range(12)]
+    
+    # Treatment grubu (indirim alan oyun)
+    treatment = []
+    for i, date in enumerate(dates):
+        treatment.append({
+            "game_id": 1,
+            "date": date,
+            "avg_players": 1000 + (200 if i >= 6 else 0) + (i * 10),
+            "current_price": 19.99,
+            "discount_pct": 30.0 if i >= 6 else 0.0,
+            "is_discount_active": i >= 6,
+        })
+    
+    # Control grubu (indirim almayan oyun)
+    control = []
+    for i, date in enumerate(dates):
+        control.append({
+            "game_id": 2,
+            "date": date,
+            "avg_players": 1000 + (i * 10),
+            "current_price": 19.99,
+            "discount_pct": 0.0,
+            "is_discount_active": False,
+        })
+    
+    return pd.DataFrame(treatment), pd.DataFrame(control)
+
+treatment_df, control_df = create_sample_data()
+
+# DiD analizi çalıştır
+results = run_did_analysis(treatment_df, control_df)
+
+print("✅ DiD Analizi Tamamlandı!")
+print(f"   ATT (Treatment Effect): {results['main_estimation']['att']:.2f}")
+print(f"   P-değeri: {results['main_estimation']['p_value']:.4f}")
+print(f"   Paralel trend geçerli mi?: {results['parallel_trends']['parallel_trends_valid']}")
+```
+
+### Survival (Hayatta Kalma) Analizi
+
+```python
+from app.analysis.survival import run_survival_analysis
+
+# Örnek oyuncu verisi oluştur
+player_data = []
+for game_id in range(1, 21):
+    for month in range(12):
+        # Bazı oyunlar zamanla oyuncu kaybeder (churn)
+        base = 1000
+        decline = month * 100 if game_id <= 10 else 0
+        player_data.append({
+            "game_id": game_id,
+            "date": datetime(2024, 1, 1) + timedelta(days=30*month),
+            "avg_players": max(100, base - decline),
+            "genre_name": "RPG" if game_id <= 10 else "Indie",
+        })
+
+df = pd.DataFrame(player_data)
+
+# Survival analizi çalıştır
+results = run_survival_analysis(
+    df,
+    churn_threshold_pct=0.5,
+    groupby_col="genre_name",
+)
+
+print("✅ Survival Analizi Tamamlandı!")
+print(f"   Churn oranı: {results['retention_metrics']['churn_rate']:.2%}")
+print(f"   Retention oranı: {results['retention_metrics']['retention_rate']:.2%}")
+print(f"   Medyan churn süresi: {results['retention_metrics']['median_time_to_churn_months']} ay")
+```
+
+### Price Elasticity (Fiyat Esnekliği) Analizi
+
+```python
+from app.analysis.elasticity import run_elasticity_analysis
+import numpy as np
+
+# Örnek fiyat-talep verisi oluştur
+np.random.seed(42)
+elasticity_data = []
+
+for i in range(50):
+    price = np.random.uniform(10, 30)
+    # Talep fiyatla ters orantılı
+    quantity = 1000 * (price ** -0.8) + np.random.normal(0, 50)
+    
+    elasticity_data.append({
+        "game_id": i,
+        "current_price": price,
+        "avg_players": max(0, quantity),
+        "genre_name": "RPG" if i < 25 else "Action",
+    })
+
+df = pd.DataFrame(elasticity_data)
+
+# Elasticity analizi çalıştır
+results = run_elasticity_analysis(
+    df,
+    method="log_log",
+    group_by="genre_name",
+)
+
+print("✅ Elasticity Analizi Tamamlandı!")
+if "overall" in results["elasticity_results"]:
+    e = results["elasticity_results"]["overall"]["elasticity"]
+    print(f"   Fiyat esnekliği: {e:.2f}")
+    print(f"   Elastik mi?: {'Evet' if abs(e) > 1.0 else 'Hayır'}")
+```
+
+Çıkmak için `exit()` yazın.
+
+---
+
+## Adım 7: Frontend'i Kontrol Edin
 
 Tarayıcınızda **http://localhost:5173** adresini açın.
 
@@ -195,7 +329,7 @@ React arayüzünün yüklendiğini ve çalıştığını doğrulayın.
 
 ---
 
-## Adım 7: Testleri Çalıştırın
+## Adım 8: Testleri Çalıştırın
 
 Otomatik testleri çalıştırmak için:
 
@@ -242,5 +376,16 @@ Her şey doğru çalıştığında şunları görmelisiniz:
 - ✅ Sağlık kontrolü `{"status": "healthy"}` döner
 - ✅ ETL pipeline'ı 5 test oyunun verisini başarıyla toplar ve birleştirir
 - ✅ Veritabanı tablolarında veri görünür
+- ✅ **Analitik modüller (DiD, Survival, Elasticity) başarıyla çalışır**
 - ✅ Frontend arayüzü yüklenir
 - ✅ `make test` testleri başarıyla geçer
+
+### Yeni Eklenen Analitik Özellikler
+
+**Phase 3** ile birlikte aşağıdaki analitik modüller eklenmiştir:
+
+1. **DiD (Difference-in-Differences)** — İndirimlerin oyuncu sayısına nedensel etkisini ölçer
+2. **Survival Analysis** — Kaplan-Meier ve Cox PH ile oyuncu retention analizi
+3. **Price Elasticity** — Talep esnekliği ve optimal fiyat önerileri
+
+Bu modüller artık tam fonksiyonel ve test edilmiştir!
