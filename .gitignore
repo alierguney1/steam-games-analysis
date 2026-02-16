@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project specific
+node_modules/
+frontend/dist/
+backend/logs/
+.env
+docker/postgres/data/
+*.db
+*.sqlite

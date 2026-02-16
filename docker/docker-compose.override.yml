@@ -1,0 +1,26 @@
+# Docker Compose Override for Development
+# This file is automatically merged with docker-compose.yml
+# Use: docker-compose up -d
+
+version: '3.8'
+
+services:
+  backend:
+    volumes:
+      - ../backend:/app
+      - backend_cache:/root/.cache
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8000:8000"
+
+  frontend:
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+
+volumes:
+  backend_cache:
