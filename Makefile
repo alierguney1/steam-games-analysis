@@ -19,7 +19,7 @@ setup:
 
 up:
 	@echo "Starting services..."
-	cd docker && docker-compose up -d
+	cd docker && docker compose up -d
 	@echo "✓ Services started!"
 	@echo "  - Frontend: http://localhost:5173"
 	@echo "  - Backend API: http://localhost:8000"
@@ -28,15 +28,15 @@ up:
 
 down:
 	@echo "Stopping services..."
-	cd docker && docker-compose down
+	cd docker && docker compose down
 	@echo "✓ Services stopped!"
 
 logs:
-	cd docker && docker-compose logs -f
+	cd docker && docker compose logs -f
 
 clean:
 	@echo "Cleaning up..."
-	cd docker && docker-compose down -v
+	cd docker && docker compose down -v
 	rm -rf backend/logs/*
 	@echo "✓ Cleanup complete!"
 
