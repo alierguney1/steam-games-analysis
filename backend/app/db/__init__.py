@@ -1,8 +1,14 @@
 """Database package"""
 from app.db.session import get_db, init_db, engine, AsyncSessionLocal
 from app.db.models import (
-    DimDate, DimGenre, DimTag, DimGame, BridgeGameTag,
-    FactPlayerPrice, AnalysisResult, AnalysisTypeEnum
+    DimDate,
+    DimGenre,
+    DimTag,
+    DimGame,
+    BridgeGameTag,
+    FactPlayerPrice,
+    AnalysisResult,
+    AnalysisTypeEnum,
 )
 
 __all__ = [

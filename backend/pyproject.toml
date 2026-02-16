@@ -3,7 +3,7 @@ name = "steam-analytics-backend"
 version = "1.0.0"
 description = "Steam Games Player Retention and Causal Pricing Analysis Backend"
 authors = ["Ali Erguney"]
-readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -50,6 +50,7 @@ target-version = "py311"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+pythonpath = ["."]
 testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"

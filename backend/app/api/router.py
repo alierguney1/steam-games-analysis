@@ -16,6 +16,7 @@ api_router = APIRouter()
 # api_router.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
 # api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 
+
 @api_router.get("/")
 async def root():
     """API root endpoint"""
@@ -27,6 +28,12 @@ async def root():
             "games": "/api/games",
             "analytics": "/api/analytics",
             "ingestion": "/api/ingestion",
-            "dashboard": "/api/dashboard"
-        }
+            "dashboard": "/api/dashboard",
+        },
     }
+
+
+@api_router.get("/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "healthy"}

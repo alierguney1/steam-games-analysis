@@ -15,8 +15,7 @@ from app.db.session import engine, init_db
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -31,21 +30,21 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Steam Analytics Backend...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Database: {settings.DATABASE_URL.split('@')[-1]}")
-    
+
     # Initialize database
     await init_db()
     logger.info("Database initialized successfully")
-    
+
     # TODO: Start scheduler for ETL jobs
     # scheduler.start()
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Steam Analytics Backend...")
     # TODO: Shutdown scheduler
     # scheduler.shutdown()
-    
+
     # Close database connections
     await engine.dispose()
     logger.info("Database connections closed")
@@ -62,9 +61,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         docs_url="/api/docs",
         redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json"
+        openapi_url="/api/openapi.json",
     )
-    
+
     # Configure CORS
     app.add_middleware(
         CORSMiddleware,
@@ -73,19 +72,19 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Include API router
     app.include_router(api_router, prefix="/api")
-    
+
     @app.get("/health")
     async def health_check():
         """Health check endpoint"""
         return {
             "status": "healthy",
             "environment": settings.ENVIRONMENT,
-            "version": settings.VERSION
+            "version": settings.VERSION,
         }
-    
+
     return app
 
 
